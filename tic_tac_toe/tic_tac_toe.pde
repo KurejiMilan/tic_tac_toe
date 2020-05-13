@@ -9,30 +9,49 @@ int[][] mapBlock = {
  {0, 0, 0},
  {0, 0, 0}
 };
-int player = 1;
+int player = 2, movesLeft = 9, xOptimized=3, yOptimized=3;
 boolean gameCompleted = false;
 String winner = "none";
 
 void setup(){
-  size(300, 300);
+  size(300, 400);
   background(255);
   frameRate(100);
   smooth(4);
 }
 
 void draw(){
+  
+  if((player==2)&&(!gameCompleted)){
+    minimax(true, 1);
+    --movesLeft;
+    mapBlock[xOptimized][yOptimized]=2;
+    print(mapBlock[xOptimized][yOptimized]);
+    if(gameResult(xOptimized, yOptimized) == 2){
+      winner= "Ai wins the game";
+      gameCompleted = true;
+    }else if(gameResult(xOptimized, yOptimized)==3){
+      winner = "it's a tie";
+      gameCompleted = true;
+    }
+    print(xOptimized,yOptimized,"\n");
+    player =1;
+  }
   drawGrids();
   ticktac();
+  
   if(gameCompleted){
     textSize(20);
     stroke(#FF0000);
     fill(#FF0000);
-    text(winner, 70, 150);
+    text(winner, 70, 360);
     noStroke();
     noFill();
   }
 }
 
+
+// following module are responsible for drawing 
 
 // function to draw the grids
 void drawGrids( ){
@@ -49,7 +68,6 @@ void drawGrids( ){
     noStroke();
   }
 }
-
 
 void ticktac(){
   //search each block and draw cross and circle at correct block
@@ -81,6 +99,105 @@ void drawCross(int x, int y){
   noStroke();
 }
 
+
+// --------following funtion are functions that handles the game functionality---------
+
+// minimax algorithm selects the most optimum move based on
+// maximum and minimum value 
+// back propagation algorithm
+int minimax(boolean maximizer,int layer){
+  if(maximizer){
+   int maxValue = -99999999;
+   
+   for(int y=0; y<3; y++){
+     for(int x=0; x<3; x++){
+       if(mapBlock[x][y]==0){
+         mapBlock[x][y]=2;
+         --movesLeft;
+         if(gameResult(x, y)==2){
+           mapBlock[x][y]=0;
+           ++movesLeft;
+           if(layer==1){
+             if((movesLeft+1)*2>maxValue){
+               xOptimized = x;
+               yOptimized = y;
+               
+             }
+           }
+           maxValue = max((movesLeft+1)*2, maxValue);
+         }else if(gameResult(x, y) ==3){
+           mapBlock[x][y]=0;
+           ++movesLeft;
+           if(layer ==1){
+             if(0>maxValue){
+               xOptimized = x;
+               yOptimized = y;
+             }
+           }
+           maxValue = max(0, maxValue); 
+         }else{
+           int value = minimax(false, layer+1);
+           if(layer == 1){
+             if(value>maxValue){
+               xOptimized = x;
+               yOptimized = y;
+             }
+           }
+           maxValue = max(maxValue, value);
+         }
+         mapBlock[x][y]=0;
+         ++movesLeft;
+       }
+     }
+   }
+   return maxValue;
+  }else{
+   int minValue = 99999999;
+  
+   for(int y=0; y<3; y++){
+     for(int x=0; x<3; x++){
+       if(mapBlock[x][y]==0){
+         mapBlock[x][y]=1;
+         --movesLeft;
+         if(gameResult(x, y)==1){
+           mapBlock[x][y]=0;
+           ++movesLeft;
+           if(layer ==1){
+             if((movesLeft+1)*-2<minValue){
+               xOptimized = x;
+               yOptimized = y;
+             }
+           }
+           minValue = min((movesLeft+1)*-2,minValue);
+         }else if(gameResult(x, y) ==3){
+           mapBlock[x][y]=0;
+           ++movesLeft;
+           if(layer ==1){
+             if(0<minValue){
+               xOptimized = x;
+               yOptimized = y;
+             }
+           }
+           minValue = min(0, minValue);
+         }else{
+           int value = minimax(true, layer+1);
+           if(layer == 1){
+             if(value<minValue){
+               xOptimized = x;
+               yOptimized = y;
+             }
+           }
+           minValue = min(minValue, value);
+         }
+         mapBlock[x][y]=0;
+         ++movesLeft;
+       }
+     }
+   }
+   return minValue;
+  }
+}
+
 // this funtion scans and searches through the entire Block of array to search similaity
 // across the vertiacal cross and horozontal cross
 int gameResult(int x, int y){
@@ -95,6 +212,7 @@ int gameResult(int x, int y){
   else if((mapBlock[0][0]==2)&&(mapBlock[1][1]==2)&&(mapBlock[2][2]==2)) return 2;
   else if((mapBlock[0][2]==2)&&(mapBlock[1][1]==2)&&(mapBlock[2][0]==2)) return 2;
   
+  if(movesLeft ==0)return 3;
   return 0;
 }
 
@@ -110,10 +228,13 @@ void mouseClicked(){
         if((100*x<xCor)&&(xCor<100*(x+1))&&(100*y<yCor)&&(yCor<100*(y+1))&&(mouseButton == LEFT)){
           if((mapBlock[x][y] == 0)&&(!gameCompleted)){
             mapBlock[x][y]=1;
+            --movesLeft; 
             if((gameResult(x, y)==1)){
               winner = "Winner is player 1\n";
               gameCompleted = true;
-              ticktac();
+            }else if(gameResult(x, y)==3){
+              gameCompleted = true;
+              winner= "it's a tie";
             }
             player= 2;
             break;
@@ -124,7 +245,7 @@ void mouseClicked(){
       }
     }
   }
-  else if(player == 2){
+  /*else if(player == 2){
     for(int y=0; y<3; y++){
       for(int x=0; x<3; x++){
         if((100*x<xCor)&&(xCor<100*(x+1))&&(100*y<yCor)&&(yCor<100*(y+1))&&(mouseButton == LEFT)){
@@ -133,7 +254,6 @@ void mouseClicked(){
             if(gameResult(x, y)==2){
               winner = "Winner is player 2\n";
               gameCompleted = true;
-              ticktac();
             }
             player= 1;
             break;
@@ -143,6 +263,5 @@ void mouseClicked(){
         }
       }
     }
-  } 
-
+  } */
 }
